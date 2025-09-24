@@ -1,3 +1,5 @@
 .venv
 geo-reviews-dataset-2023.tskv
 *.png
+!bar_example.png
+!wordcloud_example.png
