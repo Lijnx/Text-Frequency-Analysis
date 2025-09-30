@@ -5,7 +5,6 @@ import re
 import pandas as pd
 import matplotlib.pyplot as plt
 import nltk
-import string
 import pymorphy3
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
@@ -48,9 +47,8 @@ def clean_text(text: str) -> str:
     # Удаление явных символов перевода строки
     text = re.sub(r'\\n', ' ', text)
 
-    # Удаление пунктуации
-    text = text.translate(str.maketrans("", "", string.punctuation))
-    text = re.sub(r"[«»—…“”„]", "", text)
+    # Удаление спец-символов и пунктуации
+    text = re.sub(r'[\W_]+', ' ', text)
 
     emoji_pattern = re.compile(
         "["u"\U0001F600-\U0001F64F"
