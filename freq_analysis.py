@@ -5,6 +5,7 @@ import re
 import pandas as pd
 import matplotlib.pyplot as plt
 import nltk
+import string
 import pymorphy3
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
@@ -13,15 +14,11 @@ from tqdm.auto import tqdm
 from wordcloud import WordCloud
 
 
-def setup():
-    '''
-    Настраивает окружение:
-    - включает прогресс-бары tqdm для pandas;
-    - загружает стоп-слова и токенизатор из NLTK.
-    '''
-    tqdm.pandas()
-    nltk.download('stopwords')
-    nltk.download('punkt_tab')
+tqdm.pandas()
+nltk.download('stopwords')
+nltk.download('punkt_tab')
+sw = stopwords.words('russian')
+morph = pymorphy3.MorphAnalyzer()
 
 
 def clean_text(text: str) -> str:
@@ -38,21 +35,22 @@ def clean_text(text: str) -> str:
     Returns:
         str: очищенный текст
     '''
+
+    # Удаляем URL-адреса
+    text = re.sub(r"http\S+|www\S+|https\S+", "", text)
+
+    # Удаляем HTML-теги 
+    text = re.sub(r"<.*?>", "", text)
+
+    # Приводим к нижнему регистру 
     text = text.lower()
+    
+    # Удаление явных символов перевода строки
     text = re.sub(r'\\n', ' ', text)
-    text = re.sub(r'\W+', ' ', text)
-    text = re.sub(r"http\S+", "", text)
 
-    html = re.compile(r'&lt;.*?&gt;')
-    text = html.sub(r'', text)
-
-    punctuations = '@#!?+&amp;*[]-%.:/();$=&gt;&lt;|{}^' + "'`" + '_'
-    for p in punctuations:
-        text = text.replace(p, '')
-
-    sw = stopwords.words('russian')
-    text = [word.lower() for word in text.split() if word.lower() not in sw]
-    text = " ".join(text)
+    # Удаление пунктуации
+    text = text.translate(str.maketrans("", "", string.punctuation))
+    text = re.sub(r"[«»—…“”„]", "", text)
 
     emoji_pattern = re.compile(
         "["u"\U0001F600-\U0001F64F"
@@ -64,6 +62,10 @@ def clean_text(text: str) -> str:
         "]+", flags=re.UNICODE
     )
     text = emoji_pattern.sub(r'', text)
+
+    text = [word for word in text.split() if word not in sw]
+
+    text = " ".join(text)
 
     return text
 
@@ -91,7 +93,6 @@ def lemmatize(tokens: list) -> list:
     Returns:
         list: список лемм
     '''
-    morph = pymorphy3.MorphAnalyzer()
     return [morph.parse(token)[0].normal_form for token in tokens]
 
 
@@ -144,7 +145,6 @@ def main():
     - выполняет токенизацию и лемматизацию;
     - строит и сохраняет wordcloud или диаграмму.
     '''
-    setup()
 
     parser = argparse.ArgumentParser(description="Анализ текстов по частотности слов.")
     parser.add_argument(
